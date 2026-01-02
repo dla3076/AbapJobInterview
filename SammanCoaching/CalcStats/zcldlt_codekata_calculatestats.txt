@@ -1,0 +1,92 @@
+"! <p class="shorttext synchronized">Calculate Stats</p>
+CLASS zcldlt_codekata_calculatestats DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    TYPES tt_integer_numbers TYPE STANDARD TABLE OF int4 WITH EMPTY KEY.
+    TYPES: BEGIN OF ts_stat_result,
+             minimum  TYPE int4,
+             maximum  TYPE int4,
+             elements TYPE int4,
+             average  TYPE decfloat34,
+           END OF ts_stat_result.
+
+    CLASS-METHODS calculate
+      IMPORTING integer_numbers    TYPE tt_integer_numbers
+      RETURNING VALUE(stat_result) TYPE ts_stat_result
+      RAISING   zcxdlt_parameter_initial.
+
+  PRIVATE SECTION.
+    TYPES: BEGIN OF ts_partial_stat_result,
+             minimum TYPE int4,
+             maximum TYPE int4,
+             sum     TYPE int4,
+           END OF ts_partial_stat_result.
+
+    CLASS-METHODS calculate_with_loop
+      IMPORTING integer_numbers    TYPE zcldlt_codekata_calculatestats=>tt_integer_numbers
+      RETURNING VALUE(stat_result) TYPE zcldlt_codekata_calculatestats=>ts_stat_result.
+
+    CLASS-METHODS calculate_with_reduce
+      IMPORTING integer_numbers    TYPE zcldlt_codekata_calculatestats=>tt_integer_numbers
+      RETURNING VALUE(stat_result) TYPE zcldlt_codekata_calculatestats=>ts_stat_result.
+ENDCLASS.
+
+
+CLASS zcldlt_codekata_calculatestats IMPLEMENTATION.
+  METHOD calculate.
+    DATA(use_loop) = abap_false.
+
+    IF integer_numbers IS INITIAL.
+
+      RAISE EXCEPTION NEW zcxdlt_parameter_initial( ).
+
+    ENDIF.
+    stat_result = COND #( WHEN use_loop = abap_true
+                          THEN calculate_with_loop( integer_numbers )
+                          ELSE calculate_with_reduce( integer_numbers ) ).
+  ENDMETHOD.
+
+  METHOD calculate_with_loop.
+    " All other values are smaller or equal
+    stat_result-minimum  = cl_abap_math=>max_int4.
+    " All other values are bigger or equal
+    stat_result-maximum  = cl_abap_math=>min_int4.
+    stat_result-elements = lines( integer_numbers ).
+
+    DATA(sum) = 0.
+
+    LOOP AT integer_numbers ASSIGNING FIELD-SYMBOL(<number>).
+
+      stat_result-minimum = nmin( val1 = stat_result-minimum
+                                  val2 = <number> ).
+      stat_result-maximum = nmax( val1 = stat_result-maximum
+                                  val2 = <number> ).
+      sum += <number>.
+
+    ENDLOOP.
+    stat_result-average = round( val = sum / stat_result-elements
+                                 dec = 6 ).
+  ENDMETHOD.
+
+  METHOD calculate_with_reduce.
+    DATA(partial_result) = REDUCE ts_partial_stat_result( INIT result = VALUE ts_partial_stat_result(
+                                                                                  " All other values are smaller or equal
+                                                                                  minimum = cl_abap_math=>max_int4
+                                                                                  " All other values are bigger or equal
+                                                                                  maximum = cl_abap_math=>min_int4 )
+    FOR <number> IN integer_numbers
+    NEXT result-minimum = nmin( val1 = result-minimum
+                                val2 = <number> )
+        result-maximum = nmax( val1 = result-maximum
+                               val2 = <number> )
+                                    result-sum += <number> ).
+
+    stat_result-elements = lines( integer_numbers ).
+    stat_result-minimum  = partial_result-minimum.
+    stat_result-maximum  = partial_result-maximum.
+    stat_result-average  = round( val = partial_result-sum / stat_result-elements
+                                  dec = 6 ).
+  ENDMETHOD.
+ENDCLASS.
