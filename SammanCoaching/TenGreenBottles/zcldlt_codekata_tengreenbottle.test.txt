@@ -1,0 +1,144 @@
+CLASS ltcl_unit_test DEFINITION FINAL
+  FOR TESTING RISK LEVEL HARMLESS DURATION SHORT.
+
+  PRIVATE SECTION.
+    DATA test_instance TYPE REF TO zcldlt_codekata_tengreenbottle.
+
+    METHODS setup.
+    METHODS teardown.
+    METHODS shall_be_ok        FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_be_ok_with_9 FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_fail_with_11 FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_fail_with_0  FOR TESTING RAISING cx_static_check cx_dynamic_check.
+ENDCLASS.
+
+
+CLASS ltcl_unit_test IMPLEMENTATION.
+  METHOD shall_be_ok.
+    " given
+    DATA(lyric_lines_exps) = VALUE string_table( ( |Ten green bottles hanging on the wall,| )
+                                                 ( |Ten green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be nine green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Nine green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be eight green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Eight green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be seven green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Seven green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be six green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Six green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be five green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Five green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be four green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Four green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be three green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Three green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be two green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Two green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be one green bottle hanging on the wall.| )
+                                                 ( || )
+                                                 ( |One green bottle hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be no green bottles hanging on the wall.| ) ).
+
+    " when
+    DATA(lyric_lines_acts) = test_instance->create_lyrics( ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = lyric_lines_exps
+                                        act = lyric_lines_acts ).
+  ENDMETHOD.
+
+  METHOD setup.
+    test_instance = NEW #( ).
+  ENDMETHOD.
+
+  METHOD teardown.
+    FREE test_instance.
+  ENDMETHOD.
+
+  METHOD shall_be_ok_with_9.
+    " given
+    DATA(lyric_lines_exps) = VALUE string_table( ( |Nine green bottles hanging on the wall,| )
+                                                 ( |Nine green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be eight green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Eight green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be seven green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Seven green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be six green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Six green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be five green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Five green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be four green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Four green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be three green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Three green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be two green bottles hanging on the wall.| )
+                                                 ( || )
+                                                 ( |Two green bottles hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be one green bottle hanging on the wall.| )
+                                                 ( || )
+                                                 ( |One green bottle hanging on the wall,| )
+                                                 ( |And if one green bottle should accidentally fall,| )
+                                                 ( |There'll be no green bottles hanging on the wall.| ) ).
+
+    " when
+    DATA(lyric_lines_acts) = test_instance->create_lyrics_with_other_start( 9 ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = lyric_lines_exps
+                                        act = lyric_lines_acts ).
+  ENDMETHOD.
+
+  METHOD shall_fail_with_0.
+    TRY.
+
+        " when
+        test_instance->create_lyrics_with_other_start( 0 ).
+        cl_abap_unit_assert=>fail( ).
+
+      CATCH ZCXDLT_PARAMETER_INvalid.
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD shall_fail_with_11.
+    TRY.
+
+        " when
+        test_instance->create_lyrics_with_other_start( 11 ).
+        cl_abap_unit_assert=>fail( ).
+
+      CATCH ZCXDLT_PARAMETER_INvalid.
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.
