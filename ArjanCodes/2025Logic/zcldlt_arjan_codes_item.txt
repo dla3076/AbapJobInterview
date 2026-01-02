@@ -1,0 +1,21 @@
+"! <p class="shorttext synchronized">Item</p>
+CLASS zcldlt_arjan_codes_item DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    DATA name  TYPE string.
+    DATA price TYPE decfloat34.
+
+    METHODS constructor
+      IMPORTING !name TYPE string     DEFAULT ''
+                price TYPE decfloat34 DEFAULT 0.
+ENDCLASS.
+
+
+CLASS zcldlt_arjan_codes_item IMPLEMENTATION.
+  METHOD constructor.
+    me->name  = name.
+    me->price = price.
+  ENDMETHOD.
+ENDCLASS.
