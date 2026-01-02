@@ -1,0 +1,125 @@
+"! <p class="shorttext synchronized">Twelve Days of Christmas Song</p>
+CLASS zcldlt_codekata_12dchristmas DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    INTERFACES if_oo_adt_classrun.
+
+    CLASS-METHODS class_constructor.
+
+    METHODS create_full_lyrics
+      RETURNING VALUE(lyric_lines) TYPE string_table.
+
+  PRIVATE SECTION.
+    TYPES: BEGIN OF ts_day_map,
+             day                   TYPE int4,
+             text                  TYPE string,
+             verse                 TYPE string,
+             comma_after_christmas TYPE string,
+           END OF ts_day_map.
+
+    CLASS-DATA day_maps TYPE STANDARD TABLE OF ts_day_map WITH EMPTY KEY.
+
+    METHODS add_lyric_lines_of_current_day
+      IMPORTING current_day TYPE int4
+      CHANGING  lyric_lines TYPE string_table.
+
+ENDCLASS.
+
+
+CLASS zcldlt_codekata_12dchristmas IMPLEMENTATION.
+  METHOD class_constructor.
+    day_maps = VALUE #( ( day   = 1
+                          text  = |first|
+                          verse = |A partridge in a pear tree.| )
+                        ( day   = 2
+                          text  = |second|
+                          verse = |Two turtle doves and| )
+                        ( day   = 3
+                          text  = |third|
+                          " TODO: check spelling: french (typo) -> French (ABAP cleaner)
+                          verse = |Three french hens| )
+                        ( day   = 4
+                          text  = |fourth|
+                          verse = |Four calling birds| )
+                        ( day   = 5
+                          text  = |fifth|
+                          verse = |Five golden rings| )
+                        comma_after_christmas = |,|
+                        ( day   = 6
+                          text  = |sixth|
+                          verse = |Six geese a-laying| )
+                        ( day   = 7
+                          text  = |seventh|
+                          verse = |Seven swans a-swimming| )
+                        ( day   = 8
+                          text  = |eight|
+                          verse = |Eight maids a-milking| )
+                        ( day   = 9
+                          text  = |ninth|
+                          verse = |Nine ladies dancing| )
+                        ( day   = 10
+                          text  = |tenth|
+                          verse = |Ten lords a-leaping| )
+                        ( day   = 11
+                          text  = |eleventh|
+                          verse = |Eleven pipers piping| )
+                        ( day   = 12
+                          text  = |twelfth|
+                          verse = |Twelve drummers drumming| ) ).
+  ENDMETHOD.
+
+  METHOD create_full_lyrics.
+    DATA(use_for) = abap_true.
+
+    IF use_for = abap_true.
+
+      lyric_lines = VALUE #(
+          FOR current_day = 1 WHILE current_day <= 12
+          ( LINES OF VALUE
+            string_table( LET <day_map> = day_maps[ day = current_day ] IN
+                          " Separate each day with an empty line after the first day
+                          BASE COND string_table( WHEN current_day > 1
+                                                  THEN VALUE #( ( || ) ) )
+                          ( |On the { <day_map>-text } day of Christmas{ <day_map>-comma_after_christmas }| )
+                          ( |My true love sent to me:| )
+                          ( <day_map>-verse )
+                          " Now add the verse of each former day
+                          ( LINES OF VALUE
+                            string_table( FOR day = current_day - 1 THEN day - 1 WHILE day > 0
+                                          ( day_maps[ day = day ]-verse ) ) ) ) ) ).
+
+    ELSE.
+
+      DO 12 TIMES.
+
+        add_lyric_lines_of_current_day( EXPORTING current_day = sy-index
+                                        CHANGING  lyric_lines = lyric_lines ).
+
+      ENDDO.
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD add_lyric_lines_of_current_day.
+    IF current_day > 1.
+
+      INSERT INITIAL LINE INTO TABLE lyric_lines.
+
+    ENDIF.
+    INSERT LINES OF VALUE string_table(
+                              LET <day_map> = day_maps[ day = current_day ] IN
+                              ( |On the { <day_map>-text } day of Christmas{ <day_map>-comma_after_christmas }| )
+                              ( |My true love sent to me:| )
+                              ( <day_map>-verse ) )
+           INTO TABLE lyric_lines.
+    INSERT LINES OF VALUE string_table( FOR day = current_day - 1 THEN day - 1 WHILE day > 0
+                                        ( day_maps[ day = day ]-verse ) )
+           INTO TABLE lyric_lines.
+  ENDMETHOD.
+
+  METHOD if_oo_adt_classrun~main.
+    out->write( create_full_lyrics( ) ).
+  ENDMETHOD.
+ENDCLASS.
