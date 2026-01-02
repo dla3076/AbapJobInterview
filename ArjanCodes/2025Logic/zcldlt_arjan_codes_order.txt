@@ -1,0 +1,31 @@
+"! <p class="shorttext synchronized">Order</p>
+CLASS zcldlt_arjan_codes_order DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    DATA amount       TYPE decfloat34.
+    DATA has_discount TYPE abap_bool.
+    DATA region       TYPE string.
+    DATA currency     TYPE string.
+    DATA type         TYPE string. " e.g. "bulk" or "normal"
+    DATA items        TYPE STANDARD TABLE OF REF TO zcldlt_arjan_codes_item WITH EMPTY KEY.
+
+    METHODS constructor
+      IMPORTING amount       TYPE decfloat34 DEFAULT 0
+                has_discount TYPE abap_bool  DEFAULT abap_false
+                region       TYPE string     DEFAULT 'US'
+                !currency    TYPE string     DEFAULT 'USD'
+                !type        TYPE string     DEFAULT 'normal'.
+ENDCLASS.
+
+
+CLASS zcldlt_arjan_codes_order IMPLEMENTATION.
+  METHOD constructor.
+    me->amount       = amount.
+    me->has_discount = has_discount.
+    me->region       = region.
+    me->currency     = currency.
+    me->type         = type.
+  ENDMETHOD.
+ENDCLASS.

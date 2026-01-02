@@ -1,0 +1,377 @@
+CLASS ltcl_unit_test DEFINITION DEFERRED.
+CLASS zcldlt_arjan_codes_order_valid DEFINITION LOCAL FRIENDS ltcl_unit_test.
+CLASS ltcl_unit_test DEFINITION FINAL
+  FOR TESTING RISK LEVEL HARMLESS DURATION SHORT.
+
+  PRIVATE SECTION.
+    DATA user          TYPE REF TO zcldlt_arjan_codes_user.
+    DATA order         TYPE REF TO zcldlt_arjan_codes_order.
+    DATA test_instance TYPE REF TO zcldlt_arjan_codes_order_valid.
+
+    METHODS setup.
+    METHODS teardown.
+
+    METHODS check_approval_status
+      IMPORTING approval_status_exp TYPE string.
+
+    METHODS change_order_items
+      IMPORTING add_negativ_item_price   TYPE abap_bool
+      CHANGING  negativ_order_item_added TYPE abap_bool.
+
+    METHODS shall_no_order_be_rejected     FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_no_user_be_rejected      FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a2000_us_pr_be_rej  FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a2000_us_pr_be_app  FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a2000_eu_eur_be_app FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a2000_eu_usd_be_rej FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a2000_disc_be_rej   FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a999_bulk_notr_be_a FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a999_be_rej         FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_admin_a999_be_app        FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_a999_be_rej              FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_a2000_disc_be_rej        FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_a2000_be_rej             FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_admin_neg_item_be_app    FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_admin_disc_be_app        FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a500_be_rej         FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a999_bulk_tr_be_r   FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a2000_eu_usd_be_re1 FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_prem_a2000_adminp_be_rej FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_all_combinations_be_ok   FOR TESTING RAISING cx_static_check cx_dynamic_check.
+ENDCLASS.
+
+
+CLASS ltcl_unit_test IMPLEMENTATION.
+  METHOD setup.
+    test_instance = NEW #( ).
+    user = NEW #( ).
+    order = NEW #( amount = 2000 ).
+    order->items = VALUE #( ( NEW #( name  = |Keyboard|
+                                     price = 100 ) )
+                            ( NEW #( name  = |Mouse|
+                                     price = 50 ) ) ).
+  ENDMETHOD.
+
+  METHOD shall_no_order_be_rejected.
+    " test_invalid_order_raises_exception_is_caught
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    FREE order.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_no_user_be_rejected.
+    " test_invalid_order_raises_exception_is_caught
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    FREE user.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD teardown.
+    FREE: user,
+          order,
+          test_instance.
+  ENDMETHOD.
+
+  METHOD check_approval_status.
+    " when
+    DATA(approval_status_act) = test_instance->approve_order( order = order
+                                                              user  = user ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = approval_status_exp
+                                        act = approval_status_act ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a2000_us_pr_be_rej.
+    " test_premium_high_value_negative_item_price
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    user->is_premium = abap_true.
+    INSERT NEW zcldlt_arjan_codes_item( name  = 'negativ_item'
+                                        price = -1 )
+           INTO TABLE order->items.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a2000_us_pr_be_app.
+    " test_premium_high_value_no_discount_non_eu
+    " given
+    DATA(approval_status_exp) = |approved|.
+
+    user->is_premium = abap_true.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a2000_eu_eur_be_app.
+    " test_premium_high_value_no_discount_eu_eur
+    " given
+    DATA(approval_status_exp) = |approved|.
+
+    user->is_premium = abap_true.
+    user->region     = |EU|.
+    order->currency = |EUR|.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a2000_eu_usd_be_rej.
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    user->is_premium = abap_true.
+    user->region     = |EU|.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a2000_disc_be_rej.
+    " test_premium_high_value_with_discount
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    user->is_premium = abap_true.
+    order->has_discount = abap_true.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a999_be_rej.
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    user->is_premium = abap_true.
+    user->is_trial   = abap_true.
+    order->amount = 999.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a999_bulk_notr_be_a.
+    " test_premium_low_value_bulk_order_non_trial
+    " given
+    DATA(approval_status_exp) = |approved|.
+
+    user->is_premium = abap_true.
+    order->amount = 999.
+    order->type   = |bulk|.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_a999_be_rej.
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    order->amount = 999.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_admin_a999_be_app.
+    " given
+    DATA(approval_status_exp) = |approved|.
+
+    user->is_admin = abap_true.
+    order->amount = 999.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_a2000_disc_be_rej.
+    " test_regular_user_with_discount
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    order->has_discount = abap_true.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_a2000_be_rej.
+    " test_regular_user_rejected_even_if_high_value
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_admin_neg_item_be_app.
+    " test_admin_user_with_negative_item
+    " given
+    DATA(approval_status_exp) = |approved|.
+
+    user->is_admin = abap_true.
+    INSERT NEW zcldlt_arjan_codes_item( name  = 'negativ_item'
+                                        price = -1 )
+           INTO TABLE order->items.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_admin_disc_be_app.
+    " test_admin_user_approved_regardless
+    " given
+    DATA(approval_status_exp) = |approved|.
+
+    user->is_admin = abap_true.
+    order->amount       = 100.
+    order->has_discount = abap_true.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a500_be_rej.
+    " test_premium_low_value_normal_order
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    user->is_premium = abap_true.
+    order->amount = 500.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a999_bulk_tr_be_r.
+    " test_premium_low_value_bulk_trial_user
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    user->is_premium = abap_true.
+    user->is_trial   = abap_true.
+    order->amount = 500.
+    order->type   = |bulk|.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a2000_eu_usd_be_re1.
+    " test_premium_high_value_no_discount_eu_usd
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    user->is_premium = abap_true.
+    user->region     = |EU|.
+    order->region = |EU|.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_prem_a2000_adminp_be_rej.
+    " given
+    DATA(approval_status_exp) = |rejected|.
+
+    user->is_premium = abap_true.
+    user->is_admin   = abap_true.
+    order->has_discount = abap_true.
+    INSERT NEW zcldlt_arjan_codes_item( name  = 'negativ_item'
+                                        price = -1 )
+           INTO TABLE order->items.
+    check_approval_status( approval_status_exp ).
+  ENDMETHOD.
+
+  METHOD shall_all_combinations_be_ok.
+    TYPES: BEGIN OF ts_combination,
+             negativ_item_price  TYPE abap_bool,
+             is_premium          TYPE abap_bool,
+             amount_greater_1000 TYPE abap_bool,
+             has_discount        TYPE abap_bool,
+             user_region         TYPE string,
+             currency            TYPE string,
+             order_type          TYPE string,
+             is_trial            TYPE abap_bool,
+             is_admin            TYPE abap_bool,
+             approval_status     TYPE string,
+           END OF ts_combination.
+    TYPES tt_combinations TYPE STANDARD TABLE OF ts_combination WITH EMPTY KEY.
+    TYPES tt_booleans     TYPE STANDARD TABLE OF abap_bool WITH EMPTY KEY.
+
+    " given
+    DATA(negativ_order_item_added) = abap_false.
+    DATA(combinations) = VALUE tt_combinations( LET booleans     = VALUE tt_booleans( ( abap_false )
+                                                                                      ( abap_true ) )
+                                                    user_regions = VALUE string_table( ( |EU| )
+                                                                                       ( |US| ) )
+                                                    currencies   = VALUE string_table( ( |EUR| )
+                                                                                       ( |USD| ) )
+                                                    order_types  = VALUE string_table( ( |bulk| )
+                                                                                       ( |normal| ) ) IN
+                                                FOR <negativ_item_price> IN booleans
+                                                FOR <is_premium> IN booleans
+                                                FOR <amount_greater_1000> IN booleans
+                                                FOR <has_discount> IN booleans
+                                                FOR <user_region> IN user_regions
+                                                FOR <currency> IN currencies
+                                                FOR <order_type> IN order_types
+                                                FOR <is_trial> IN booleans
+                                                FOR <is_admin> IN booleans
+                                                ( negativ_item_price  = <negativ_item_price>
+                                                  is_premium          = <is_premium>
+                                                  amount_greater_1000 = <amount_greater_1000>
+                                                  has_discount        = <has_discount>
+                                                  user_region         = <user_region>
+                                                  currency            = <currency>
+                                                  order_type          = <order_type>
+                                                  is_trial            = <is_trial>
+                                                  is_admin            = <is_admin> ) ).
+
+    LOOP AT combinations ASSIGNING FIELD-SYMBOL(<combination>).
+
+      user->is_admin   = <combination>-is_admin.
+      user->is_premium = <combination>-is_premium.
+      user->is_trial   = <combination>-is_trial.
+      user->region     = <combination>-user_region.
+      order->has_discount = <combination>-has_discount.
+      order->currency     = <combination>-currency.
+      order->type         = <combination>-order_type.
+      order->amount       = COND #( WHEN <combination>-amount_greater_1000 = abap_true
+                                    THEN 1001
+                                    ELSE 1000 ).
+      change_order_items( EXPORTING add_negativ_item_price   = <combination>-negativ_item_price
+                          CHANGING  negativ_order_item_added = negativ_order_item_added ).
+      <combination>-approval_status = test_instance->approve_order_original( order = order
+                                                                             user  = user ).
+
+    ENDLOOP.
+    LOOP AT combinations ASSIGNING <combination>.
+
+      DATA(line_number) = sy-tabix.
+
+      user->is_admin   = <combination>-is_admin.
+      user->is_premium = <combination>-is_premium.
+      user->is_trial   = <combination>-is_trial.
+      user->region     = <combination>-user_region.
+      order->has_discount = <combination>-has_discount.
+      order->currency     = <combination>-currency.
+      order->type         = <combination>-order_type.
+      order->amount       = COND #( WHEN <combination>-amount_greater_1000 = abap_true
+                                    THEN 1001
+                                    ELSE 1000 ).
+      change_order_items( EXPORTING add_negativ_item_price   = <combination>-negativ_item_price
+                          CHANGING  negativ_order_item_added = negativ_order_item_added ).
+
+      " when
+      DATA(approval_status_act) = test_instance->approve_order( order = order
+                                                                user  = user ).
+
+      " then
+      cl_abap_unit_assert=>assert_equals( exp  = <combination>-approval_status
+                                          act  = approval_status_act
+                                          msg  = |Error in line: { line_number }|
+                                          quit = if_abap_unit_constant=>quit-no ).
+
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD change_order_items.
+    " has to be deleted
+    IF     add_negativ_item_price   = abap_false
+       AND negativ_order_item_added = abap_true.
+
+      DELETE order->items INDEX 1.
+
+    ENDIF.
+    " has to be added
+    IF     add_negativ_item_price   = abap_true
+       AND negativ_order_item_added = abap_false.
+
+      INSERT NEW zcldlt_arjan_codes_item( name  = 'negativ_item'
+                                          price = -1 )
+             INTO order->items INDEX 1.
+
+    ENDIF.
+    " set the current state
+    negativ_order_item_added = add_negativ_item_price.
+  ENDMETHOD.
+ENDCLASS.

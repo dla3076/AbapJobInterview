@@ -1,0 +1,8 @@
+"! <p class="shorttext synchronized">Validation of region and currency combinations</p>
+INTERFACE zifdlt_arjan_codes_region_curr
+  PUBLIC.
+  METHODS is_combination_valid
+    IMPORTING region          TYPE string
+              !currency       TYPE string
+    RETURNING VALUE(is_valid) TYPE abap_bool.
+ENDINTERFACE.

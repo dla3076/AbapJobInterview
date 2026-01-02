@@ -1,0 +1,27 @@
+"! <p class="shorttext synchronized">User</p>
+CLASS zcldlt_arjan_codes_user DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    DATA is_premium TYPE abap_bool.
+    DATA is_admin   TYPE abap_bool.
+    DATA is_trial   TYPE abap_bool.
+    DATA region     TYPE string.
+
+    METHODS constructor
+      IMPORTING is_premium TYPE abap_bool DEFAULT abap_false
+                is_admin   TYPE abap_bool DEFAULT abap_false
+                is_trial   TYPE abap_bool DEFAULT abap_false
+                region     TYPE string    DEFAULT 'US'.
+ENDCLASS.
+
+
+CLASS zcldlt_arjan_codes_user IMPLEMENTATION.
+  METHOD constructor.
+    me->is_premium = is_premium.
+    me->is_admin   = is_admin.
+    me->is_trial   = is_trial.
+    me->region     = region.
+  ENDMETHOD.
+ENDCLASS.

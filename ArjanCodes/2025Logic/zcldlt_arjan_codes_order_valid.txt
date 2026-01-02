@@ -1,0 +1,421 @@
+"! <p class="shorttext synchronized">Validation for Orders</p>
+CLASS zcldlt_arjan_codes_order_valid DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    INTERFACES if_oo_adt_classrun.
+
+    METHODS constructor
+      IMPORTING region_currency_validation TYPE REF TO zifdlt_arjan_codes_region_curr OPTIONAL.
+
+    METHODS approve_order
+      IMPORTING !order                 TYPE REF TO zcldlt_arjan_codes_order
+                !user                  TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(approval_status) TYPE string.
+
+  PROTECTED SECTION.
+    METHODS approve_order_original
+      IMPORTING !order                 TYPE REF TO zcldlt_arjan_codes_order
+                !user                  TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(approval_status) TYPE string.
+
+  PRIVATE SECTION.
+    TYPES tt_booleans TYPE STANDARD TABLE OF abap_bool WITH EMPTY KEY.
+
+    CONSTANTS: BEGIN OF approval_status_values,
+                 rejected TYPE string VALUE 'rejected',
+                 approved TYPE string VALUE 'approved',
+               END OF approval_status_values.
+
+    DATA region_currency_validation TYPE REF TO zifdlt_arjan_codes_region_curr.
+
+    METHODS approve_premium_user
+      IMPORTING !user                  TYPE REF TO zcldlt_arjan_codes_user
+                !order                 TYPE REF TO zcldlt_arjan_codes_order
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS approve_non_premium_user
+      IMPORTING !user                  TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS approve_order_amount_less_1000
+      IMPORTING !order                 TYPE REF TO zcldlt_arjan_codes_order
+                !user                  TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS approve_region_eu_by_currency
+      IMPORTING !user                  TYPE REF TO zcldlt_arjan_codes_user
+                !order                 TYPE REF TO zcldlt_arjan_codes_order
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS check_order_has_negativ_price
+      IMPORTING !order                   TYPE REF TO zcldlt_arjan_codes_order
+      RETURNING VALUE(has_negativ_price) TYPE abap_bool.
+
+    METHODS approve_order_refactored
+      IMPORTING !order                 TYPE REF TO zcldlt_arjan_codes_order
+                !user                  TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS approve_order_rejected
+      IMPORTING !order                 TYPE REF TO zcldlt_arjan_codes_order
+                !user                  TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS approve_order_approved
+      IMPORTING !order                 TYPE REF TO zcldlt_arjan_codes_order
+                !user                  TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS approve_order_python_final
+      IMPORTING !order                 TYPE REF TO zcldlt_arjan_codes_order
+                !user                  TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS is_eligible_amount
+      IMPORTING !order     TYPE REF TO zcldlt_arjan_codes_order
+                !user      TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(yes) TYPE abap_bool.
+
+    METHODS has_valid_currency
+      IMPORTING !order     TYPE REF TO zcldlt_arjan_codes_order
+                !user      TYPE REF TO zcldlt_arjan_codes_user
+      RETURNING VALUE(yes) TYPE abap_bool.
+
+    METHODS approve_order_amount_more_1000
+      IMPORTING !user                  TYPE REF TO zcldlt_arjan_codes_user
+                !order                 TYPE REF TO zcldlt_arjan_codes_order
+      RETURNING VALUE(approval_status) TYPE string.
+
+    METHODS approve_by_user_region
+      IMPORTING !user                  TYPE REF TO zcldlt_arjan_codes_user
+                !order                 TYPE REF TO zcldlt_arjan_codes_order
+      RETURNING VALUE(approval_status) TYPE string.
+ENDCLASS.
+
+
+CLASS zcldlt_arjan_codes_order_valid IMPLEMENTATION.
+  METHOD constructor.
+    me->region_currency_validation = COND #( WHEN region_currency_validation IS BOUND
+                                             THEN region_currency_validation
+                                             ELSE NEW zcldlt_arjan_codes_region_curr( ) ).
+  ENDMETHOD.
+
+  METHOD approve_order.
+    DATA(method) = 1.
+
+    approval_status = SWITCH #( method
+                                WHEN 1 THEN approve_order_refactored( order = order
+                                                                      user  = user )
+                                WHEN 2 THEN approve_order_rejected( order = order
+                                                                    user  = user )
+                                WHEN 3 THEN approve_order_approved( order = order
+                                                                    user  = user )
+                                WHEN 4 THEN approve_order_python_final( order = order
+                                                                        user  = user )
+                                ELSE        approve_order_original( order = order
+                                                                    user  = user ) ).
+  ENDMETHOD.
+
+  METHOD if_oo_adt_classrun~main.
+    DATA(user) = NEW zcldlt_arjan_codes_user( is_premium = abap_true ).
+    DATA(order) = NEW zcldlt_arjan_codes_order( amount = 1500
+                                                region = |EU| ).
+    DATA(order_validation) = NEW zcldlt_arjan_codes_order_valid( ).
+
+    order->items = VALUE #( ( NEW #( name  = |Keyboard|
+                                     price = 100 ) )
+                            ( NEW #( name  = |Monitor|
+                                     price = 200 ) )
+                            ( NEW #( name  = |Mouse|
+                                     price = 50 ) ) ).
+    out->write( |Order approval result: { order_validation->approve_order( order = order
+                                                                           user  = user ) }| ).
+  ENDMETHOD.
+
+  METHOD approve_order_original.
+    TRY.
+
+        IF    user  IS INITIAL
+           OR order IS INITIAL.
+
+          RAISE EXCEPTION NEW cx_sy_ref_is_initial( ).
+
+        ENDIF.
+
+        IF user->is_premium = abap_true.
+
+          IF order->amount > 1000.
+
+            IF NOT ( order->has_discount = abap_true ).
+
+              IF user->region <> |EU|.
+
+                LOOP AT order->items ASSIGNING FIELD-SYMBOL(<item>).
+
+                  IF <item>->price < 0.
+
+                    RETURN |rejected|.
+
+                  ENDIF.
+
+                ENDLOOP.
+                RETURN |approved|.
+
+              ELSE.
+
+                IF order->currency = |EUR|.
+
+                  RETURN |approved|.
+
+                ELSE.
+
+                  RETURN |rejected|.
+
+                ENDIF.
+
+              ENDIF.
+
+            ELSE.
+
+              RETURN |rejected|.
+
+            ENDIF.
+
+          ELSE.
+
+            IF order->type = |bulk| AND NOT ( user->is_trial = abap_true ).
+
+              RETURN |approved|.
+
+            ELSE.
+
+              RETURN |rejected|.
+
+            ENDIF.
+
+          ENDIF.
+
+        ELSE.
+
+          IF user->is_admin = abap_true.
+
+            RETURN |approved|.
+
+          ELSE.
+
+            RETURN |rejected|.
+
+          ENDIF.
+
+        ENDIF.
+
+      CATCH cx_sy_ref_is_initial
+            cx_static_check
+            cx_dynamic_check
+            cx_root.
+
+        RETURN |rejected|.
+
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD approve_premium_user.
+    approval_status = COND #( WHEN order->amount > 1000
+                              THEN approve_order_amount_more_1000( user  = user
+                                                                   order = order )
+                              ELSE approve_order_amount_less_1000( order = order
+                                                                   user  = user ) ).
+  ENDMETHOD.
+
+  METHOD approve_non_premium_user.
+    approval_status = COND #( WHEN user->is_admin = abap_true
+                              THEN approval_status_values-approved
+                              ELSE approval_status_values-rejected ).
+  ENDMETHOD.
+
+  METHOD approve_order_amount_less_1000.
+    approval_status = COND #( WHEN order->type    = |bulk|
+                               AND user->is_trial = abap_false
+                              THEN approval_status_values-approved
+                              ELSE approval_status_values-rejected ).
+  ENDMETHOD.
+
+  METHOD approve_region_eu_by_currency.
+    IF     user->region = |EU|
+       AND region_currency_validation->is_combination_valid( region   = user->region
+                                                             currency = order->currency ).
+
+      approval_status = approval_status_values-approved.
+
+    ELSE.
+
+      approval_status = approval_status_values-rejected.
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD check_order_has_negativ_price.
+    LOOP AT order->items TRANSPORTING NO FIELDS
+         WHERE table_lINE->price < 0.
+
+      has_negativ_price = abap_true.
+      EXIT.
+
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD approve_order_refactored.
+    IF    user  IS INITIAL
+       OR order IS INITIAL.
+
+      RETURN approval_status_values-rejected.
+
+    ENDIF.
+    approval_status = COND #( WHEN user->is_premium = abap_true
+                              THEN approve_premium_user( user  = user
+                                                         order = order )
+                              ELSE approve_non_premium_user( user ) ).
+  ENDMETHOD.
+
+  METHOD approve_order_rejected.
+    IF    user  IS INITIAL
+       OR order IS INITIAL.
+
+      RETURN approval_status_values-rejected.
+
+    ENDIF.
+
+    DATA(rejected) = VALUE tt_booleans( ( xsdbool(     user->is_premium     = abap_true
+                                                   AND order->amount        > 1000
+                                                   AND order->has_discount  = abap_false
+                                                   AND user->region        <> |EU|
+                                                   AND check_order_has_negativ_price( order ) ) )
+                                        ( xsdbool(     user->is_premium     = abap_true
+                                                   AND order->amount        > 1000
+                                                   AND order->has_discount  = abap_false
+                                                   AND user->region         = |EU|
+                                                   AND order->currency     <> |EUR| ) )
+                                        ( xsdbool(     user->is_premium    = abap_true
+                                                   AND order->amount       > 1000
+                                                   AND order->has_discount = abap_true ) )
+                                        ( xsdbool(         user->is_premium  = abap_true
+                                                   AND     order->amount    <= 1000
+                                                   AND NOT (     order->type    = |bulk|
+                                                             AND user->is_trial = abap_false ) ) )
+                                        ( xsdbool(     user->is_premium = abap_false
+                                                   AND user->is_admin   = abap_false ) ) ).
+
+    IF line_exists( rejected[ table_line = abap_true ] ).
+
+      approval_status = approval_status_values-rejected.
+
+    ELSE.
+
+      approval_status = approval_status_values-approved.
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD approve_order_approved.
+    DATA(approved) = VALUE tt_booleans( ( xsdbool(     user IS BOUND
+                                                   AND order IS BOUND
+                                                   AND user->is_premium = abap_true
+                                                   AND order->amount > 1000
+                                                   AND order->has_discount = abap_false
+                                                   AND user->region <> |EU|
+                                                   AND check_order_has_negativ_price( order )  = abap_false ) )
+                                        ( xsdbool(     user                IS BOUND
+                                                   AND order               IS BOUND
+                                                   AND user->is_premium     = abap_true
+                                                   AND order->amount        > 1000
+                                                   AND order->has_discount  = abap_false
+                                                   AND user->region         = |EU|
+                                                   AND order->currency      = |EUR| ) )
+                                        ( xsdbool(     user             IS BOUND
+                                                   AND order            IS BOUND
+                                                   AND user->is_premium  = abap_true
+                                                   AND order->amount    <= 1000
+                                                   AND order->type       = |bulk|
+                                                   AND user->is_trial    = abap_false ) )
+                                        ( xsdbool(     user             IS BOUND
+                                                   AND order            IS BOUND
+                                                   AND user->is_premium  = abap_false
+                                                   AND user->is_admin    = abap_true ) ) ).
+
+    IF line_exists( approved[ table_line = abap_true ] ).
+
+      approval_status = approval_status_values-approved.
+
+    ELSE.
+
+      approval_status = approval_status_values-rejected.
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD approve_order_python_final.
+    IF    user  IS INITIAL
+       OR order IS INITIAL.
+
+      RETURN approval_status_values-rejected.
+
+    ENDIF.
+    " 1) Privilege/override gate
+    IF user->is_admin = abap_true.
+
+      RETURN approval_status_values-approved.
+
+    ENDIF.
+    " 2) Policy gate (rejections for non-admins)
+    DATA(rejection_rules) = VALUE tt_booleans( ( xsdbool( user->is_premium = abap_false ) )
+                                               " order.amount is None --> missing
+                                               ( order->has_discount )
+                                               ( xsdbool( is_eligible_amount( order = order
+                                                                              user  = user  ) = abap_false ) )
+                                               ( xsdbool( has_valid_currency( order = order
+                                                                              user  = user  ) = abap_false ) )
+                                               ( check_order_has_negativ_price( order ) ) ).
+
+    IF line_exists( rejection_rules[ table_line = abap_true ] ).
+
+      RETURN approval_status_values-rejected.
+
+    ENDIF.
+    RETURN approval_status_values-approved.
+  ENDMETHOD.
+
+  METHOD is_eligible_amount.
+    yes = xsdbool(    order->amount > 1000
+                   OR (     order->type    = |bulk|
+                        AND user->is_trial = abap_false ) ).
+  ENDMETHOD.
+
+  METHOD has_valid_currency.
+    yes = region_currency_validation->is_combination_valid( region   = user->region
+                                                            currency = order->currency ).
+  ENDMETHOD.
+
+  METHOD approve_order_amount_more_1000.
+    approval_status = COND #( WHEN order->has_discount = abap_true
+                              THEN approval_status_values-rejected
+                              ELSE approve_by_user_region( user  = user
+                                                           order = order ) ).
+  ENDMETHOD.
+
+  METHOD approve_by_user_region.
+    IF user->region = |EU|.
+
+      approval_status = approve_region_eu_by_currency( user  = user
+                                                       order = order  ).
+
+    ELSE.
+
+      approval_status = COND #( WHEN check_order_has_negativ_price( order  )
+                                THEN approval_status_values-rejected
+                                ELSE approval_status_values-approved ).
+
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
