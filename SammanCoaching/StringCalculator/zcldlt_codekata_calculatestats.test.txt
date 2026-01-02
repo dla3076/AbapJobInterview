@@ -1,0 +1,49 @@
+CLASS ltcl_calculate_stats DEFINITION FINAL
+  FOR TESTING RISK LEVEL HARMLESS DURATION SHORT.
+
+  PRIVATE SECTION.
+    METHODS shall_be_ok           FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_raise_exception FOR TESTING RAISING cx_static_check cx_dynamic_check.
+ENDCLASS.
+
+
+CLASS ltcl_calculate_stats IMPLEMENTATION.
+  METHOD shall_be_ok.
+    " given
+    DATA(numbers) = VALUE zcldlt_codekata_calculatestats=>tt_integer_numbers( ( 6 )
+                                                                              ( 9 )
+                                                                              ( 15 )
+                                                                              ( -2 )
+                                                                              ( 92 )
+                                                                              ( 11 ) ).
+    DATA(result_exp) = VALUE zcldlt_codekata_calculatestats=>ts_stat_result( minimum  = -2
+                                                                             maximum  = 92
+                                                                             elements = 6
+                                                                             average  = '21.833333' ).
+
+    " when
+    DATA(result_act) = zcldlt_codekata_calculatestats=>calculate( numbers ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = result_exp-elements
+                                        act = result_act-elements ).
+    cl_abap_unit_assert=>assert_equals( exp = result_exp-minimum
+                                        act = result_act-minimum ).
+    cl_abap_unit_assert=>assert_equals( exp = result_exp-maximum
+                                        act = result_act-maximum ).
+    cl_abap_unit_assert=>assert_equals_float( exp = result_exp-average
+                                              act = result_act-average ).
+  ENDMETHOD.
+
+  METHOD shall_raise_exception.
+    TRY.
+
+        " when
+        zcldlt_codekata_calculatestats=>calculate( VALUE #( ) ).
+        cl_abap_unit_assert=>fail( ).
+
+      CATCH zcxdlt_parameter_initial.
+        " then
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.
