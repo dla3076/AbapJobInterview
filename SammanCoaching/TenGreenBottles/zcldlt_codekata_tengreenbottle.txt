@@ -1,0 +1,110 @@
+CLASS zcldlt_codekata_tengreenbottle DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    CLASS-METHODS class_constructor.
+
+    METHODS create_lyrics
+      RETURNING VALUE(lyric_lines) TYPE string_table.
+
+    "! <p class="shorttext synchronized"></p>
+    "! Create the lyrics
+    "! @parameter number_to_start | The maximum is 10.The minimum is 1. <p class="shorttext synchronized"></p>
+    "! @parameter lyric_lines     | <p class="shorttext synchronized"></p>
+    METHODS create_lyrics_with_other_start
+      IMPORTING number_to_start    TYPE int4
+      RETURNING VALUE(lyric_lines) TYPE string_table
+      RAISING   ZCXDLT_PARAMETER_INvalid.
+
+  PRIVATE SECTION.
+    TYPES: BEGIN OF ts_number_map,
+             number        TYPE int4,
+             text          TYPE string,
+             bottle_suffix TYPE string,
+           END OF ts_number_map.
+
+    CLASS-DATA number_maps TYPE STANDARD TABLE OF ts_number_map WITH EMPTY KEY.
+
+    METHODS create_bottles_hanging_on_wall
+      IMPORTING !number     TYPE i
+      RETURNING VALUE(line) TYPE string.
+
+    METHODS create_bottles_left
+      IMPORTING !number     TYPE i
+      RETURNING VALUE(line) TYPE string.
+
+ENDCLASS.
+
+
+CLASS zcldlt_codekata_tengreenbottle IMPLEMENTATION.
+  METHOD class_constructor.
+    number_maps = VALUE #( bottle_suffix = |s|
+                           ( number = 10
+                             text   = |Ten| )
+                           ( number = 9
+                             text   = |Nine| )
+                           ( number = 8
+                             text   = |Eight| )
+                           ( number = 7
+                             text   = |Seven| )
+                           ( number = 6
+                             text   = |Six| )
+                           ( number = 5
+                             text   = |Five| )
+                           ( number = 4
+                             text   = |Four| )
+                           ( number = 3
+                             text   = |Three| )
+                           ( number = 2
+                             text   = |Two| )
+                           bottle_suffix = ||
+                           ( number = 1
+                             text   = |One| )
+                           bottle_suffix = |s|
+                           ( number = 0
+                             text   = |No| ) ).
+  ENDMETHOD.
+
+  METHOD create_lyrics.
+    lyric_lines = create_lyrics_with_other_start( 10 ).
+  ENDMETHOD.
+
+  METHOD create_bottles_hanging_on_wall.
+    ASSIGN number_maps[ number = number ]
+           TO FIELD-SYMBOL(<number_map>)
+           ELSE UNASSIGN.
+    IF <number_map> IS ASSIGNED.
+
+      line = |{ <number_map>-text } green bottle{ <number_map>-bottle_suffix } hanging on the wall,|.
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD create_bottles_left.
+    ASSIGN number_maps[ number = number ]
+           TO FIELD-SYMBOL(<number_map>)
+           ELSE UNASSIGN.
+    IF <number_map> IS ASSIGNED.
+
+      line = |There'll be { to_lower( <number_map>-text ) } green bottle{ <number_map>-bottle_suffix } hanging on the wall.|.
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD create_lyrics_with_other_start.
+    IF    number_to_start > 10
+       OR number_to_start < 1.
+
+      RAISE EXCEPTION NEW ZCXDLT_PARAMETER_INvalid( ).
+
+    ENDIF.
+    lyric_lines = VALUE #( FOR number = number_to_start THEN number - 1 WHILE number > 0
+                           ( COND #( WHEN number = number_to_start
+                                     THEN create_bottles_hanging_on_wall( number )
+                                     ELSE || ) )
+                           ( create_bottles_hanging_on_wall( number ) )
+                           ( |And if one green bottle should accidentally fall,| )
+                           ( create_bottles_left( number - 1 ) ) ).
+  ENDMETHOD.
+ENDCLASS.
