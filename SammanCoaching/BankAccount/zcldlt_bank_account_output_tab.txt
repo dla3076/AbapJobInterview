@@ -1,0 +1,22 @@
+"! <p class="shorttext synchronized">Table with the output statements of the bank account</p>
+CLASS zcldlt_bank_account_output_tab DEFINITION
+  PUBLIC
+  INHERITING FROM zcldlt_bank_account_output_str FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    METHODS zifdlt_bank_account_output~print REDEFINITION.
+
+    DATA statements TYPE string_table READ-ONLY.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+CLASS zcldlt_bank_account_output_tab IMPLEMENTATION.
+  METHOD zifdlt_bank_account_output~print.
+    INSERT statement INTO TABLE statements.
+  ENDMETHOD.
+ENDCLASS.

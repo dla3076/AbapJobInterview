@@ -1,0 +1,23 @@
+"! <p class="shorttext synchronized">Main report for the bank account</p>
+CLASS zcldlt_bank_account_main DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    INTERFACES if_oo_adt_classrun.
+ENDCLASS.
+
+
+CLASS zcldlt_bank_account_main IMPLEMENTATION.
+  METHOD if_oo_adt_classrun~main.
+    DATA(bank_account) = NEW zcldlt_bank_account( NEW zcldlt_bank_account_output_con( out ) ).
+
+    bank_account->change_current_date( '20120110' ).
+    bank_account->zifdlt_bank_account~deposit( 1000 ).
+    bank_account->change_current_date( '20120113' ).
+    bank_account->zifdlt_bank_account~deposit( 2000 ).
+    bank_account->change_current_date( '20120114' ).
+    bank_account->zifdlt_bank_account~withdraw( 500 ).
+    bank_account->zifdlt_bank_account~printstatement( ).
+  ENDMETHOD.
+ENDCLASS.

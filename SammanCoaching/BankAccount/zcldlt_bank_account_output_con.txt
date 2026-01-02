@@ -1,0 +1,29 @@
+"! <p class="shorttext synchronized" lang="en">Print the bank account statement on the console</p>
+CLASS zcldlt_bank_account_output_con DEFINITION
+  PUBLIC
+  INHERITING FROM zcldlt_bank_account_output_str FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    METHODS zifdlt_bank_account_output~print REDEFINITION.
+
+    METHODS constructor
+      IMPORTING console_output TYPE REF TO  if_oo_adt_classrun_out.
+
+  PRIVATE SECTION.
+    DATA console_output TYPE REF TO if_oo_adt_classrun_out.
+ENDCLASS.
+
+
+CLASS zcldlt_bank_account_output_con IMPLEMENTATION.
+  METHOD constructor.
+    super->constructor( ).
+    me->console_output = console_output.
+  ENDMETHOD.
+
+  METHOD zifdlt_bank_account_output~print.
+    CHECK console_output IS BOUND.
+
+    console_output->write( statement ).
+  ENDMETHOD.
+ENDCLASS.

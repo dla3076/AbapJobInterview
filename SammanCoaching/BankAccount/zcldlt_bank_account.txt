@@ -1,0 +1,144 @@
+"! <p class="shorttext synchronized">Bank Account</p>
+CLASS zcldlt_bank_account DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    INTERFACES zifdlt_bank_account.
+
+    CLASS-METHODS class_constructor.
+
+    METHODS constructor
+      IMPORTING !output TYPE REF TO zifdlt_bank_account_output OPTIONAL.
+
+    METHODS change_current_date
+      IMPORTING !date TYPE cl_abap_context_info=>ty_system_date.
+
+  PRIVATE SECTION.
+    TYPES: BEGIN OF ts_statement,
+             date             TYPE cl_abap_context_info=>ty_system_date,
+             counter_for_date TYPE int4,
+             amount           TYPE int4,
+             balance          TYPE int4,
+           END OF ts_statement.
+
+    CLASS-DATA output_width TYPE zifdlt_bank_account_output=>ts_output_width.
+    CLASS-DATA header_text  TYPE zifdlt_bank_account_output=>ts_header_text.
+
+    DATA current_date     TYPE cl_abap_context_info=>ty_system_date.
+    DATA counter_for_date TYPE int4.
+    DATA output           TYPE REF TO zifdlt_bank_account_output.
+    DATA statements       TYPE SORTED TABLE OF ts_statement WITH UNIQUE KEY date counter_for_date.
+
+    METHODS get_last_balance
+      RETURNING VALUE(balance) TYPE ts_statement-balance.
+
+    METHODS print_statement
+      IMPORTING VALUE(index) TYPE int4.
+
+    METHODS get_next_counter
+      RETURNING VALUE(counter) TYPE ts_statement-counter_for_date.
+ENDCLASS.
+
+
+CLASS zcldlt_bank_account IMPLEMENTATION.
+  METHOD class_constructor.
+    output_width = VALUE #( date    = 10
+                            amount  = 6
+                            balance = 7 ).
+    header_text = VALUE #( date    = TEXT-001
+                           amount  = TEXT-002
+                           balance = TEXT-003 ).
+  ENDMETHOD.
+
+  METHOD constructor.
+    change_current_date( cl_abap_context_info=>get_system_date( ) ).
+    me->output = output.
+  ENDMETHOD.
+
+  METHOD zifdlt_bank_account~deposit.
+    INSERT VALUE #( date             = current_date
+                    counter_for_date = get_next_counter( )
+                    amount           = amount
+                    balance          = get_last_balance( ) + amount )
+           INTO TABLE statements.
+  ENDMETHOD.
+
+  METHOD zifdlt_bank_account~printstatement.
+    DATA(new) = abap_true.
+    DATA(lines) = lines( statements ).
+
+    CHECK output IS BOUND.
+
+    IF new = abap_true.
+
+      output->print_header( header_text  = header_text
+                            output_width = output_width ).
+      DO lines TIMES.
+
+        " Add one, in order to start at the last line
+        DATA(index) = lines - sy-index + 1.
+
+        ASSIGN statements[ index ]
+               TO FIELD-SYMBOL(<statement>)
+               ELSE UNASSIGN.
+        IF <statement> IS ASSIGNED.
+
+          output->print_statement( CORRESPONDING #( <statement> ) ).
+
+        ENDIF.
+
+      ENDDO.
+
+    ELSE.
+
+      output->print(
+          |{ header_text-date WIDTH = output_width-date } \|\| { header_text-amount WIDTH = output_width-amount } \|\| { header_text-balance WIDTH = output_width-balance }| ).
+      DO lines TIMES.
+
+        " Add one, in order to start at the last line
+        print_statement( lines - sy-index + 1 ).
+
+      ENDDO.
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD zifdlt_bank_account~withdraw.
+    DATA(absolut_amount) = abs( amount ).
+
+    INSERT VALUE #( date             = current_date
+                    counter_for_date = get_next_counter( )
+                    amount           = -1 * absolut_amount
+                    balance          = get_last_balance( ) - absolut_amount )
+           INTO TABLE statements.
+  ENDMETHOD.
+
+  METHOD change_current_date.
+    current_date = date.
+    counter_for_date = 0.
+  ENDMETHOD.
+
+  METHOD get_last_balance.
+    CHECK statements IS NOT INITIAL.
+
+    balance = statements[ lines( statements ) ]-balance.
+  ENDMETHOD.
+
+  METHOD print_statement.
+    ASSIGN statements[ index ]
+           TO FIELD-SYMBOL(<statement>)
+           ELSE UNASSIGN.
+    IF <statement> IS ASSIGNED.
+
+      output->print(
+          |{ <statement>-date DATE = ISO WIDTH = output_width-date } \|\| { <statement>-amount NUMBER = RAW WIDTH = output_width-amount } \|\| { <statement>-balance NUMBER = RAW WIDTH = output_width-balance }| ).
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD get_next_counter.
+    counter = counter_for_date + 1.
+    counter_for_date = counter.
+  ENDMETHOD.
+ENDCLASS.

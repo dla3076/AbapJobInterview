@@ -1,0 +1,45 @@
+"! <p class="shorttext synchronized">Output for the print statement of the bank account</p>
+INTERFACE zifdlt_bank_account_output
+  PUBLIC.
+  TYPES: BEGIN OF ts_statement,
+           date    TYPE cl_abap_context_info=>ty_system_date,
+           amount  TYPE int4,
+           balance TYPE int4,
+         END OF ts_statement.
+  TYPES: BEGIN OF ts_output_width,
+           date    TYPE int4,
+           amount  TYPE int4,
+           balance TYPE int4,
+         END OF ts_output_width.
+  TYPES: BEGIN OF ts_header_text,
+           date    TYPE string,
+           amount  TYPE string,
+           balance TYPE string,
+         END OF ts_header_text.
+
+  CONSTANTS default_separator TYPE string VALUE ` || `.
+
+  "! <p class="shorttext synchronized"></p>
+  "! Prints the heading for the statements.<br/>
+  "! Important note: Has to be called before print_statement.
+  "! @parameter header_text  | <p class="shorttext synchronized"></p>
+  "! @parameter output_width | <p class="shorttext synchronized"></p>
+  "! @parameter separator    | <p class="shorttext synchronized"></p>
+  METHODS print_header
+    IMPORTING header_text  TYPE ts_header_text
+              output_width TYPE ts_output_width
+              separator    TYPE string DEFAULT default_separator.
+
+  "! <p class="shorttext synchronized"></p>
+  "! Prints the statement.<br/>
+  "! The width is taken from the method print_header.
+  "! @parameter statement | <p class="shorttext synchronized"></p>
+  METHODS print_statement
+    IMPORTING !statement TYPE ts_statement.
+
+  "! <p class="shorttext synchronized"></p>
+  "! !!!!!!!  DO NOT USER ANYMORE  !!!!!!!
+  "! @parameter statement | <p class="shorttext synchronized"></p>
+  METHODS print
+    IMPORTING !statement TYPE clike.
+ENDINTERFACE.

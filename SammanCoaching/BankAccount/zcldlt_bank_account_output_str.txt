@@ -1,0 +1,34 @@
+"! <p class="shorttext synchronized">Simple string output of the bank account</p>
+CLASS zcldlt_bank_account_output_str DEFINITION
+  PUBLIC ABSTRACT
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    INTERFACES zifdlt_bank_account_output
+    ABSTRACT METHODS print.
+
+  PRIVATE SECTION.
+    DATA output_width TYPE zifdlt_bank_account_output=>ts_output_width.
+    DATA separator    TYPE string.
+ENDCLASS.
+
+
+CLASS zcldlt_bank_account_output_str IMPLEMENTATION.
+  METHOD zifdlt_bank_account_output~print_header.
+    DATA(date) = |{ header_text-date WIDTH = output_width-date }|.
+    DATA(amount) = |{ header_text-amount WIDTH = output_width-amount }|.
+    DATA(balance) = |{ header_text-balance WIDTH = output_width-balance }|.
+
+    me->output_width = output_width.
+    me->separator    = separator.
+    zifdlt_bank_account_output~print( date && separator && amount && separator && balance ).
+  ENDMETHOD.
+
+  METHOD zifdlt_bank_account_output~print_statement.
+    DATA(date) = |{ statement-date DATE = ISO WIDTH = output_width-date }|.
+    DATA(amount) = |{ statement-amount NUMBER = RAW WIDTH = output_width-amount }|.
+    DATA(balance) = |{ statement-balance NUMBER = RAW WIDTH = output_width-balance }|.
+
+    zifdlt_bank_account_output~print( date && separator && amount && separator && balance ).
+  ENDMETHOD.
+ENDCLASS.

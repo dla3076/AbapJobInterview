@@ -1,0 +1,20 @@
+"! <p class="shorttext synchronized">Bank Account</p>
+INTERFACE zifdlt_bank_account
+  PUBLIC.
+  "! <p class="shorttext synchronized"></p>
+  "! Deposit some money
+  "! @parameter amount | The amount has to be positiv.<p class="shorttext synchronized"></p>
+  METHODS deposit
+    IMPORTING amount TYPE int4.
+
+  "! <p class="shorttext synchronized"></p>
+  "! Get some money
+  "! @parameter amount | It does not matter if the amount is positiv or negativ <p class="shorttext synchronized"></p>
+  METHODS withdraw
+    IMPORTING amount TYPE int4.
+
+  "! <p class="shorttext synchronized"></p>
+  "! Print all statements.<br/>
+  "! The latest statement is the first one which has to be printed.
+  METHODS printStatement.
+ENDINTERFACE.
