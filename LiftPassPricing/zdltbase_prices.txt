@@ -1,0 +1,12 @@
+@EndUserText.label : 'ZBASE_PRICES'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zdltbase_prices {
+
+  key client : abap.clnt not null;
+  key type   : abap.char(10) not null;
+  cost       : int4;
+
+}
