@@ -1,0 +1,39 @@
+"! <p class="shorttext synchronized">String Calculator</p>
+CLASS zcldlt_codekata_string_calc DEFINITION
+  PUBLIC FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    METHODS calculate
+      IMPORTING calculation_string        TYPE clike
+      RETURNING VALUE(calculation_result) TYPE int4
+      RAISING   cx_sy_conversion_overflow
+                cx_sy_arithmetic_overflow
+                zcxdlt_parameter_invalid.
+
+  PRIVATE SECTION.
+    CONSTANTS: BEGIN OF regular_expressions,
+                 optional_minus_and_numbers TYPE string VALUE '^[-]?\d+',
+               END OF regular_expressions.
+
+    METHODS validate_calculation_string
+      IMPORTING calculation_string TYPE string
+      RAISING   zcxdlt_parameter_invalid.
+ENDCLASS.
+
+
+CLASS zcldlt_codekata_string_calc IMPLEMENTATION.
+  METHOD calculate.
+    validate_calculation_string( condense( calculation_string ) ).
+
+    calculation_result = CONV int4( calculation_string ).
+  ENDMETHOD.
+
+  METHOD validate_calculation_string.
+    CHECK    calculation_string IS INITIAL
+          OR count( val  = calculation_string
+                    pcre = regular_expressions-optional_minus_and_numbers )  = 0. " nothing found
+
+    RAISE EXCEPTION NEW zcxdlt_parameter_invalid( ).
+  ENDMETHOD.
+ENDCLASS.
