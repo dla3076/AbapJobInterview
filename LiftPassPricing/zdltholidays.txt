@@ -1,0 +1,12 @@
+@EndUserText.label : 'ZHOLIDAYS'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zdltholidays {
+
+  key client  : abap.clnt not null;
+  key holiday : abap.dats not null;
+  description : abap.char(100);
+
+}

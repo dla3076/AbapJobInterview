@@ -1,0 +1,179 @@
+CLASS ltcl_unittest DEFINITION
+  FINAL
+  FOR TESTING
+  RISK LEVEL HARMLESS
+  DURATION SHORT.
+
+  PRIVATE SECTION.
+    DATA testinstance TYPE REF TO zdlt_prices_3.
+
+    METHODS setup.
+    METHODS teardown.
+
+    METHODS calculate_with_age
+      IMPORTING age      TYPE int4
+                !type    TYPE zdltbase_prices-type
+                cost_exp TYPE int4.
+
+    METHODS calculate_without_age
+      IMPORTING !type    TYPE zdltbase_prices-type
+                cost_exp TYPE int4.
+
+    METHODS shall_1jour_age_5_be_0       FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_night_age_5_be_0       FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_1jour_age_14_be_25     FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_1jour_no_age_be_35     FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_1jour_age_74_be_27     FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_1jour_age_24_be_35     FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_night_age_74_be_8      FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_night_age_24_be_19     FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_1jour_no_age_mon_be_23 FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_1jour_age_74_mon_be_18 FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_1jour_age_24_mon_be_23 FOR TESTING RAISING cx_static_check cx_dynamic_check.
+ENDCLASS.
+
+CLASS ltcl_unittest IMPLEMENTATION.
+  METHOD shall_1jour_age_5_be_0.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 35.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 5
+                        type     = '1jour'
+                        cost_exp = 0 ).
+  ENDMETHOD.
+
+  METHOD setup.
+    testinstance = NEW #( ).
+  ENDMETHOD.
+
+  METHOD teardown.
+    FREE testinstance.
+  ENDMETHOD.
+
+  METHOD calculate_with_age.
+    " when
+    DATA(cost_act) = testinstance->calculate_lift_pass_price( age  = age
+                                                              type = type ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = cost_exp
+                                        act = cost_act ).
+  ENDMETHOD.
+
+  METHOD shall_night_age_5_be_0.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 19.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 5
+                        type     = 'night'
+                        cost_exp = 0 ).
+  ENDMETHOD.
+
+  METHOD shall_1jour_age_14_be_25.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 35.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 14
+                        type     = '1jour'
+                        cost_exp = 25 ).
+  ENDMETHOD.
+
+  METHOD calculate_without_age.
+    " when
+    DATA(cost_act) = testinstance->calculate_lift_pass_price( type ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = cost_exp
+                                        act = cost_act ).
+  ENDMETHOD.
+
+  METHOD shall_1jour_no_age_be_35.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 35.
+    END-TEST-INJECTION.
+    calculate_without_age( type     = '1jour'
+                           cost_exp = 35 ).
+  ENDMETHOD.
+
+  METHOD shall_1jour_age_24_be_35.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 35.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 24
+                        type     = '1jour'
+                        cost_exp = 35 ).
+  ENDMETHOD.
+
+  METHOD shall_1jour_age_74_be_27.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 35.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 74
+                        type     = '1jour'
+                        cost_exp = 27 ).
+  ENDMETHOD.
+
+  METHOD shall_night_age_24_be_19.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 19.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 24
+                        type     = 'night'
+                        cost_exp = 19 ).
+  ENDMETHOD.
+
+  METHOD shall_night_age_74_be_8.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 19.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 74
+                        type     = 'night'
+                        cost_exp = 8 ).
+  ENDMETHOD.
+
+  METHOD shall_1jour_age_24_mon_be_23.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 35.
+    END-TEST-INJECTION.
+    TEST-INJECTION date.
+      date = '20251215'.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 24
+                        type     = '1jour'
+                        cost_exp = 23 ).
+  ENDMETHOD.
+
+  METHOD shall_1jour_age_74_mon_be_18.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 35.
+    END-TEST-INJECTION.
+    TEST-INJECTION date.
+      date = '20251215'.
+    END-TEST-INJECTION.
+    calculate_with_age( age      = 74
+                        type     = '1jour'
+                        cost_exp = 18 ).
+  ENDMETHOD.
+
+  METHOD shall_1jour_no_age_mon_be_23.
+    " given
+    TEST-INJECTION baseprice.
+      baseprice = 35.
+    END-TEST-INJECTION.
+    TEST-INJECTION date.
+      date = '20251215'.
+    END-TEST-INJECTION.
+    calculate_without_age( type     = '1jour'
+                           cost_exp = 23 ).
+  ENDMETHOD.
+ENDCLASS.

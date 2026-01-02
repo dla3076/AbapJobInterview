@@ -1,0 +1,173 @@
+" https://github.com/dominikpanzer/ABAP-Lift-Pass-Pricing-Kata/blob/main/src/zprices_3.clas.abap
+"! <p class="shorttext synchronized">Lift Pass Pricing Kata - Variant 3</p>
+CLASS zdlt_prices_3 DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    METHODS calculate_lift_pass_price IMPORTING age         TYPE int4 OPTIONAL
+                                                !type       TYPE zdltbase_prices-type
+                                      RETURNING VALUE(cost) TYPE int4.
+
+  PROTECTED SECTION.
+    METHODS calculate_lift_pass_price_org IMPORTING age         TYPE int4 OPTIONAL
+                                                    !type       TYPE char10
+                                          RETURNING VALUE(cost) TYPE int4.
+
+  PRIVATE SECTION.
+    METHODS select_baseprice
+      IMPORTING !type            TYPE zdltbase_prices-type
+      RETURNING VALUE(baseprice) TYPE zdltbase_prices-cost.
+
+    METHODS build_date
+      RETURNING VALUE(date) TYPE cl_abap_context_info=>ty_system_date.
+
+    METHODS calculate_reduction
+      IMPORTING !date            TYPE cl_abap_context_info=>ty_system_date
+      RETURNING VALUE(reduction) TYPE int4.
+ENDCLASS.
+
+CLASS zdlt_prices_3 IMPLEMENTATION.
+  METHOD calculate_lift_pass_price.
+    DATA(baseprice) = select_baseprice( type ).
+    DATA(reduction) = calculate_reduction( build_date( )  ).
+
+    IF age IS SUPPLIED.
+
+      IF type = 'night'.
+
+        cost = ceil( COND f( WHEN age < 6  THEN 0
+                             WHEN age > 64 THEN baseprice * '0.4'
+                             ELSE               baseprice ) ).
+
+      ELSE.
+
+        " TODO apply reduction for others
+        cost = ceil( COND f( WHEN age < 6  THEN 0
+                             WHEN age < 15 THEN baseprice * '0.7'
+                             WHEN age > 64 THEN baseprice * '0.75' * ( 1 - CONV f( reduction / 100 ) )
+                             ELSE               baseprice * ( 1 - CONV f( reduction / 100 ) ) ) ).
+
+      ENDIF.
+
+    ELSE.
+
+      cost = ceil( COND f( WHEN type = 'night'
+                           THEN 0
+                           ELSE baseprice * ( 1 - CONV f( reduction / 100 ) ) ) ).
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD calculate_lift_pass_price_org.
+    DATA lt_liftnames       TYPE TABLE OF char30.
+    DATA isholiday          TYPE abap_bool.
+    DATA day_p              TYPE p LENGTH 8 DECIMALS 0.
+    DATA reduction          TYPE int4 VALUE 0.
+    DATA cost_with_decimals TYPE f.
+
+    FIELD-SYMBOLS <holidays_line> TYPE zdltholidays.
+    FIELD-SYMBOLS <liftname>      TYPE char30.
+    DATA ls_liftnames LIKE LINE OF lt_liftnames.
+    DATA low_tax      TYPE f                    VALUE '0.16'.
+    DATA high_tax     TYPE f                    VALUE '0.07'.
+    DATA vip          TYPE abap_bool.
+
+    IF age IS SUPPLIED AND age < 6.
+      cost = 0.
+    ELSE.
+      SELECT SINGLE cost FROM zdltbase_prices WHERE type = @type INTO @DATA(baseprice).
+      IF type <> 'night'.
+        SELECT * FROM zdltholidays INTO TABLE @DATA(holidays).
+
+        DATA(date) = sy-datum.
+
+        LOOP AT holidays ASSIGNING <holidays_line>.
+          IF date IS NOT INITIAL.
+            IF     date(4)   = <holidays_line>-holiday(4)
+               AND date+4(2) = <holidays_line>-holiday+4(2)
+               AND date+6(2) = <holidays_line>-holiday+6(2).
+              isholiday = 'X'.
+            ENDIF.
+          ENDIF.
+        ENDLOOP.
+
+        day_p = date MOD 7.
+        IF day_p > 1.
+          day_p -= 1.
+        ELSE.
+          day_p += 6.
+        ENDIF.
+
+        IF isholiday = '' AND day_p = '1'.
+          reduction = 35.
+        ENDIF.
+        " TODO apply reduction for others
+        IF age < 15.
+          cost_with_decimals = baseprice * '0.7'.
+          cost = ceil( cost_with_decimals ).
+        ELSE.
+          IF age IS NOT SUPPLIED.
+            cost_with_decimals = baseprice * ( 1 - reduction / 100 ).
+            cost = ceil( cost_with_decimals ).
+          ELSE.
+            IF age > 64.
+              cost_with_decimals = baseprice * '0.75' * ( 1 - reduction / 100 ).
+              cost = ceil( cost_with_decimals ).
+            ELSE.
+              cost_with_decimals = baseprice * ( 1 - reduction / 100 ).
+              cost = ceil( cost_with_decimals ).
+            ENDIF.
+          ENDIF.
+        ENDIF.
+      ELSE.
+        IF age IS SUPPLIED AND age >= 6.
+          IF age > 64.
+            cost_with_decimals = baseprice * '0.4'.
+            cost = ceil( cost_with_decimals ).
+          ELSE.
+            cost = ceil( baseprice ).
+          ENDIF.
+        ELSE.
+          cost = 0.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD select_baseprice.
+    TEST-SEAM baseprice.
+
+      SELECT SINGLE cost
+          FROM zdltbase_prices
+          WHERE type = @type
+          INTO @baseprice.
+
+    END-TEST-SEAM.
+  ENDMETHOD.
+
+  METHOD build_date.
+    TEST-SEAM date.
+      date = cl_abap_context_info=>get_system_date( ).
+    END-TEST-SEAM.
+  ENDMETHOD.
+
+  METHOD calculate_reduction.
+    CHECK date IS NOT INITIAL.
+
+    SELECT COUNT( * )
+        FROM zdltholidays
+        WHERE holiday = @date.
+    reduction = COND #( WHEN sy-subrc   <> 0
+                         AND date MOD 7  = 2
+                        THEN 35 ).
+
+    DATA(day_p) = date MOD 7.
+    IF day_p > 1.
+      day_p -= 1.
+    ELSE.
+      day_p += 6.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
