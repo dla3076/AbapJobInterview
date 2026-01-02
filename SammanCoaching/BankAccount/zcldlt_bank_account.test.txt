@@ -1,0 +1,87 @@
+CLASS ltcl_bank_account DEFINITION FINAL
+  FOR TESTING RISK LEVEL HARMLESS DURATION SHORT.
+
+  PRIVATE SECTION.
+    DATA test_instance TYPE REF TO zcldlt_bank_account.
+    DATA output        TYPE REF TO zcldlt_bank_account_output_tab.
+
+    METHODS setup.
+    METHODS teardown.
+    METHODS shall_output_be_ok           FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_two_times_a_day_be_ok  FOR TESTING RAISING cx_static_check cx_dynamic_check.
+    METHODS shall_negativ_withdraw_be_ok FOR TESTING RAISING cx_static_check cx_dynamic_check.
+ENDCLASS.
+
+
+CLASS ltcl_bank_account IMPLEMENTATION.
+  METHOD shall_output_be_ok.
+    " given
+    DATA(statement_exps) = VALUE string_table( ( `Date       || Amount || Balance` )
+                                               ( `2012-01-14 || -500   || 2500   ` )
+                                               ( `2012-01-13 || 2000   || 3000   ` )
+                                               ( `2012-01-10 || 1000   || 1000   ` ) ).
+
+    " when
+    test_instance->change_current_date( '20120110' ).
+    test_instance->zifdlt_bank_account~deposit( 1000 ).
+    test_instance->change_current_date( '20120113' ).
+    test_instance->zifdlt_bank_account~deposit( 2000 ).
+    test_instance->change_current_date( '20120114' ).
+    test_instance->zifdlt_bank_account~withdraw( 500 ).
+    test_instance->zifdlt_bank_account~printstatement( ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = statement_exps
+                                        act = output->statements ).
+  ENDMETHOD.
+
+  METHOD setup.
+    output = NEW #( ).
+    test_instance = NEW #( output ).
+  ENDMETHOD.
+
+  METHOD teardown.
+    FREE: output,
+          test_instance.
+  ENDMETHOD.
+
+  METHOD shall_negativ_withdraw_be_ok.
+    " given
+    DATA(statement_exps) = VALUE string_table( ( `Date       || Amount || Balance` )
+                                               ( `2012-01-14 || -500   || 2500   ` )
+                                               ( `2012-01-13 || 2000   || 3000   ` )
+                                               ( `2012-01-10 || 1000   || 1000   ` ) ).
+
+    " when
+    test_instance->change_current_date( '20120110' ).
+    test_instance->zifdlt_bank_account~deposit( 1000 ).
+    test_instance->change_current_date( '20120113' ).
+    test_instance->zifdlt_bank_account~deposit( 2000 ).
+    test_instance->change_current_date( '20120114' ).
+    test_instance->zifdlt_bank_account~withdraw( -500 ).
+    test_instance->zifdlt_bank_account~printstatement( ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = statement_exps
+                                        act = output->statements ).
+  ENDMETHOD.
+
+  METHOD shall_two_times_a_day_be_ok.
+    " given
+    DATA(statement_exps) = VALUE string_table( ( `Date       || Amount || Balance` )
+                                               ( `2012-01-10 || 10     || 3010   ` )
+                                               ( `2012-01-10 || 2000   || 3000   ` )
+                                               ( `2012-01-10 || 1000   || 1000   ` ) ).
+
+    " when
+    test_instance->change_current_date( '20120110' ).
+    test_instance->zifdlt_bank_account~deposit( 1000 ).
+    test_instance->zifdlt_bank_account~deposit( 2000 ).
+    test_instance->zifdlt_bank_account~deposit( 10 ).
+    test_instance->zifdlt_bank_account~printstatement( ).
+
+    " then
+    cl_abap_unit_assert=>assert_equals( exp = statement_exps
+                                        act = output->statements ).
+  ENDMETHOD.
+ENDCLASS.
