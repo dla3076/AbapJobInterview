@@ -11,3 +11,4 @@ The examples are based on the following repositories or websites:</br>
   <li>https://sammancoaching.org/kata_descriptions/bank_account.html</li>
   <li>https://github.com/dominikpanzer/ABAP-Lift-Pass-Pricing-Kata/blob/main/src/</li>
 </ul>
+I added my solution for acceptance tests in order to have a solution for the refactoring of legacy code.
