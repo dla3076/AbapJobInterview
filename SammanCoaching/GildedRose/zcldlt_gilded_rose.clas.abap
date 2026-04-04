@@ -1,5 +1,5 @@
 ! <p class="shorttext synchronized">Gilded Rose kata</p>
-CLASS zcldlt_gilded_rose3 DEFINITION
+CLASS zcldlt_gilded_rose DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC.
@@ -48,7 +48,7 @@ CLASS zcldlt_gilded_rose3 DEFINITION
       IMPORTING item TYPE REF TO zcldlt_gilded_rose_item.
 ENDCLASS.
 
-CLASS zcldlt_gilded_rose3 IMPLEMENTATION.
+CLASS zcldlt_gilded_rose IMPLEMENTATION.
   METHOD class_constructor.
     rules = VALUE #( ( regular_expression             = '^Aged\sBrie$'
                        quality_to_change              = 1
