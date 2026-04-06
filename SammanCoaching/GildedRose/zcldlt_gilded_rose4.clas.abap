@@ -67,6 +67,8 @@ CLASS zcldlt_gilded_rose4 DEFINITION
 
     CLASS-DATA rules TYPE STANDARD TABLE OF ts_rule WITH EMPTY KEY.
 
+    CLASS-METHODS build_rules.
+
     DATA mt_items TYPE tt_items.
 
     METHODS update_item
@@ -84,24 +86,15 @@ CLASS zcldlt_gilded_rose4 DEFINITION
     METHODS change_quality
       IMPORTING item              TYPE REF TO zcldlt_gilded_rose_item
                 quality_to_change TYPE i.
+
+    METHODS map_item
+      IMPORTING item                    TYPE REF TO zcldlt_gilded_rose_item
+      RETURNING VALUE(item_calculation) TYPE zifdlt_gilded_rose_qual_cal4=>ts_item.
 ENDCLASS.
 
 CLASS zcldlt_gilded_rose4 IMPLEMENTATION.
   METHOD class_constructor.
-    rules = VALUE #( ( regular_expression = `^Sulfuras` " Evertyhing which starts with Sulfuras
-                       quality_calculator = NEW zcldlt_gilded_rose_qualcalno4( ) )
-                     decrease_sell_in = 1
-                     ( regular_expression = `^Backstage\spasses` " Evertyhing which starts with Backstage passes
-                       quality_calculator = NEW zcldlt_gilded_rose_qualcalsca4( VALUE #( ( sell_in_less_than = 5
-                                                                                           quality_to_change = 3 )
-                                                                                         ( sell_in_less_than = 10
-                                                                                           quality_to_change = 2 ) ) ) )
-                     ( regular_expression = `^Aged\sBrie$` " Only Aged Brie
-                       quality_calculator = NEW zcldlt_gilded_rose_qualcaldef4( factor = -1 ) ) " increase
-                     ( regular_expression = `^Conjured` " Evertyhing which starts with Conjured
-                       quality_calculator = NEW zcldlt_gilded_rose_qualcaldef4( factor = 2 ) )
-                     ( regular_expression = `^.*$` " Has to be the last one, because it's the default
-                       quality_calculator = NEW zcldlt_gilded_rose_qualcaldef4( ) ) ).
+    build_rules( ).
   ENDMETHOD.
 
   METHOD constructor.
@@ -151,7 +144,37 @@ CLASS zcldlt_gilded_rose4 IMPLEMENTATION.
     decrease_sell_in( item     = item
                       decrease = rule-decrease_sell_in ).
     change_quality( item              = item
-                    quality_to_change = rule-quality_calculator->calculate( item ) ).
+                    quality_to_change = rule-quality_calculator->calculate( map_item( item ) ) ).
     processed = abap_true.
+  ENDMETHOD.
+
+  METHOD build_rules.
+    DATA(quality_change) = VALUE zcldlt_gilded_rose_qualcaldef4=>ts_quality_change( default       = 1
+                                                                                    after_sell_in = 2 ).
+
+    rules = VALUE #( ( regular_expression = `^Sulfuras` " Evertyhing which starts with Sulfuras
+                       quality_calculator = NEW zcldlt_gilded_rose_qualcalno4( ) )
+                     decrease_sell_in = 1
+                     ( regular_expression = `^Backstage\spasses` " Evertyhing which starts with Backstage passes
+                       quality_calculator = NEW zcldlt_gilded_rose_qualcalsca4( default_quality = quality_change-default
+                                                                                scalings        = VALUE #(
+                                                                                    ( sell_in_less_than = 5
+                                                                                      quality_to_change = 3 )
+                                                                                    ( sell_in_less_than = 10
+                                                                                      quality_to_change = 2 ) ) ) )
+                     ( regular_expression = `^Aged\sBrie$` " Only Aged Brie
+                       quality_calculator = NEW zcldlt_gilded_rose_qualcaldef4( quality_change = quality_change
+                                                                                factor         = 1 ) )
+                     ( regular_expression = `^Conjured` " Evertyhing which starts with Conjured
+                       quality_calculator = NEW zcldlt_gilded_rose_qualcaldef4( quality_change = quality_change
+                                                                                factor         = -2 ) )
+                     ( regular_expression = `^.*$` " Has to be the last one, because it's the default
+                       quality_calculator = NEW zcldlt_gilded_rose_qualcaldef4( quality_change = quality_change
+                                                                                factor         = -1 ) ) ).
+  ENDMETHOD.
+
+  METHOD map_item.
+    item_calculation = VALUE #( sell_in = item->mv_sell_in
+                                quality = item->mv_quality ).
   ENDMETHOD.
 ENDCLASS.
